@@ -6,9 +6,9 @@ import time
 from src.utils import get_binance_fee
 
 
-BASE_COIN = 'USDT'
+BASE_COIN = 'USDC'
 INVESTMENT = 1_000  # Starting amount in BASE_COIN
-FEE = get_binance_fee(vip_level=3, is_usdc=False, is_maker=False, using_bnb=True)
+FEE = get_binance_fee(vip_level=7, is_usdc=True, is_maker=False, using_bnb=True)
 MIN_PROFIT_USD = 0.01  # Only log if profit is strictly greater than this amount
 
 prices = {}
@@ -17,6 +17,7 @@ pair_to_triangles = {}
 
 logging.basicConfig(
     filename='logs/arbitrage_logs.txt',
+    filemode='w',
     level=logging.INFO,
     format='%(asctime)s | %(message)s'
 )

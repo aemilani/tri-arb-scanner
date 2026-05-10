@@ -20,6 +20,7 @@ kline_cache = {}  # Prevents redundant API calls and IP bans
 
 logging.basicConfig(
     filename='logs/historical_arbitrage_logs.txt',
+    filemode='w',
     level=logging.INFO,
     format='%(message)s'
 )
