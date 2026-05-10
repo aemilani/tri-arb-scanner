@@ -6,6 +6,10 @@ from datetime import datetime, timedelta, UTC
 from src.utils import get_binance_fee
 
 
+# NOTE: This backtest is done based one the closing prices of 1-minute candles, without considering spread.
+# Therefore, the results will be grossly overestimated.
+
+
 BASE_COIN = 'USDT'
 INVESTMENT = 1_000  # Starting amount in BASE_COIN
 FEE = get_binance_fee(vip_level=0, is_usdc=False, is_maker=False, using_bnb=True)
