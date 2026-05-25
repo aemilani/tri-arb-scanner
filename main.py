@@ -8,7 +8,7 @@ from src.utils import get_binance_fee
 
 BASE_COIN = 'USDC'
 INVESTMENT = 1_000  # Starting amount in BASE_COIN
-FEE = get_binance_fee(vip_level=7, is_usdc=True, is_maker=False, using_bnb=True)
+FEE = get_binance_fee(vip_level=3, is_usdc=True, is_maker=False, using_bnb=True)
 MIN_PROFIT_USD = 0.01  # Only log if profit is strictly greater than this amount
 
 prices = {}
@@ -169,8 +169,34 @@ def on_close(_ws, _close_status_code, _close_msg):
     print("\n[WebSocket Closed] Connection to Binance lost.")
 
 
-def on_open(_ws):
-    print("[WebSocket Opened] Streaming real-time order books. Waiting for profitable arbs...\n")
+def on_open(ws):
+    print("[OPEN] Connection established! Building targeted subscription list...\n")
+
+    # 1. Extract exactly which unique pairs our triangles actually use
+    unique_symbols = list(pair_to_triangles.keys())
+
+    # 2. Format them to Binance's stream requirement (lowercase + @bookTicker)
+    streams = [f"{symbol.lower()}@bookTicker" for symbol in unique_symbols]
+
+    # 3. Binance limits a single WebSocket to 1024 streams.
+    # If your triangles use more than 1000 unique pairs, we safely cap it.
+    if len(streams) > 1000:
+        print(f"[WARNING] {len(streams)} pairs found. Capping at 1000 to obey Binance limits.")
+        streams = streams[:1000]
+
+    # 4. Chunk the subscription requests so we don't send one massive JSON string
+    chunk_size = 100
+    for i in range(0, len(streams), chunk_size):
+        chunk = streams[i:i + chunk_size]
+        subscribe_message = {
+            "method": "SUBSCRIBE",
+            "params": chunk,
+            "id": i + 1
+        }
+        ws.send(json.dumps(subscribe_message))
+        time.sleep(0.5)  # Give Binance a half-second to process the batch
+
+    print(f"[SUCCESS] Subscribed to {len(streams)} targeted pairs. Data should start flowing now!")
 
 
 if __name__ == "__main__":
