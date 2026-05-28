@@ -16,7 +16,7 @@ FEE = get_binance_fee(vip_level=0, is_usdc=False, is_maker=False, using_bnb=True
 MIN_PROFIT_USD = 0.01  # Only log if profit is strictly greater than this amount
 
 prices = {}
-kline_cache = {}  # Prevents redundant API calls and IP bans
+kline_cache = {}
 
 logging.basicConfig(
     filename='logs/historical_arbitrage_logs.txt',
@@ -39,8 +39,6 @@ def get_all_triangles():
 
     # Filter for active spot pairs
     spot_symbols = [s for s in data['symbols'] if s['isSpotTradingAllowed'] and s['status'] == 'TRADING']
-
-    # Find all coins that trade directly with USDT
     usdt_pairs = {s['baseAsset']: s['symbol'] for s in spot_symbols if s['quoteAsset'] == BASE_COIN}
 
     triangles = []
@@ -82,9 +80,7 @@ def check_arbitrage(triangle, timestamp):
     if p1 not in prices or p2 not in prices or p3 not in prices:
         return minute_profit, minute_txs
 
-    # -------------------------------------------------------------
     # PATH 1: FORWARD (e.g., USDT -> ETH -> BTC -> USDT)
-    # -------------------------------------------------------------
     rate1 = prices[p1]['ask']
     if rate1 > 0:
         c1_acquired = (INVESTMENT / rate1) * (1 - FEE)
@@ -104,9 +100,7 @@ def check_arbitrage(triangle, timestamp):
             minute_profit += profit_usd
             minute_txs += 1
 
-    # -------------------------------------------------------------
     # PATH 2: REVERSE (e.g., USDT -> BTC -> ETH -> USDT)
-    # -------------------------------------------------------------
     r_rate1 = prices[p3]['ask']
     if r_rate1 > 0:
         c2_acq_rev = (INVESTMENT / r_rate1) * (1 - FEE)
@@ -157,10 +151,7 @@ def get_cached_klines(symbol, start_time, end_time, interval="1m"):
         df['close'] = df['close'].astype(float)
         df.rename(columns={'close': symbol}, inplace=True)
 
-        # Save to cache to prevent pulling this pair again
         kline_cache[symbol] = df
-
-        # Respect Binance API rate limits
         time.sleep(0.1)
 
         return df
@@ -198,13 +189,11 @@ def run_backtest_for_triangle(triangle, start_time, end_time):
         triangle_total_profit += profit
         triangle_total_txs += txs
 
-    # Report Total Summary for this Triangle
     summary_msg = (f"=== SUMMARY: {triangle['c1']}/{triangle['c2']} | "
                    f"Trades Executed: {triangle_total_txs} | "
                    f"Total Profit: ${triangle_total_profit:.4f} ===\n")
     print(summary_msg)
 
-    # Log the summary to the file as well
     if triangle_total_txs > 0:
         logging.info(summary_msg)
 

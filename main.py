@@ -91,9 +91,7 @@ def check_arbitrage(triangle):
     if p1 not in prices or p2 not in prices or p3 not in prices:
         return
 
-    # -------------------------------------------------------------
     # PATH 1: FORWARD (e.g., USDT -> ETH -> BTC -> USDT)
-    # -------------------------------------------------------------
     # Step 1: Buy C1 with BASE_COIN (Divide by Ask)
     rate1 = prices[p1]['ask']
     if rate1 == 0: return
@@ -115,9 +113,7 @@ def check_arbitrage(triangle):
         rates_str = f"{p1}:{rate1}, {p2}:{rate2}, {p3}:{rate3}"
         log_and_print_arb("FORWARD", path_str, rates_str, profit_usd, profit_pct)
 
-    # -------------------------------------------------------------
     # PATH 2: REVERSE (e.g., USDT -> BTC -> ETH -> USDT)
-    # -------------------------------------------------------------
     # Step 1: Buy C2 with BASE_COIN (Divide by Ask)
     r_rate1 = prices[p3]['ask']
     if r_rate1 == 0: return
@@ -144,18 +140,15 @@ def check_arbitrage(triangle):
 def on_message(_ws, message):
     data = json.loads(message)
 
-    # Ensure it's a bookTicker payload
     symbol = data.get('s')
     if not symbol:
         return
 
-    # Update local order book state
     prices[symbol] = {
         'bid': float(data['b']),
         'ask': float(data['a'])
     }
 
-    # Instantly trigger math ONLY for the specific triangles affected by this tick
     if symbol in pair_to_triangles:
         for tri in pair_to_triangles[symbol]:
             check_arbitrage(tri)
@@ -172,19 +165,15 @@ def on_close(_ws, _close_status_code, _close_msg):
 def on_open(ws):
     print("[OPEN] Connection established! Building targeted subscription list...\n")
 
-    # 1. Extract exactly which unique pairs our triangles actually use
     unique_symbols = list(pair_to_triangles.keys())
-
-    # 2. Format them to Binance's stream requirement (lowercase + @bookTicker)
     streams = [f"{symbol.lower()}@bookTicker" for symbol in unique_symbols]
 
-    # 3. Binance limits a single WebSocket to 1024 streams.
-    # If your triangles use more than 1000 unique pairs, we safely cap it.
+    # Binance limits a single WebSocket to 1024 streams.
     if len(streams) > 1000:
         print(f"[WARNING] {len(streams)} pairs found. Capping at 1000 to obey Binance limits.")
         streams = streams[:1000]
 
-    # 4. Chunk the subscription requests so we don't send one massive JSON string
+    # Chunking the subscription requests so we don't send one massive JSON string
     chunk_size = 100
     for i in range(0, len(streams), chunk_size):
         chunk = streams[i:i + chunk_size]
@@ -201,8 +190,6 @@ def on_open(ws):
 
 if __name__ == "__main__":
     if initialize_market_data():
-        # Connect to the All Book Tickers stream (!bookTicker)
-        # This streams best bid/ask for EVERY symbol on Binance without needing to subscribe to individual pairs.
         socket_url = "wss://stream.binance.com:9443/ws/!bookTicker"
 
         wsocket = websocket.WebSocketApp(socket_url,
@@ -211,7 +198,6 @@ if __name__ == "__main__":
                                          on_error=on_error,
                                          on_close=on_close)
 
-        # Run the websocket, automatically reconnecting if it drops
         while True:
             wsocket.run_forever()
             print("Reconnecting in 5 seconds...")
