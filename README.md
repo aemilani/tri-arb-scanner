@@ -2,7 +2,7 @@
 
 A high-performance Python script that detects real-time triangular arbitrage opportunities on the Binance Spot market. By leveraging Binance's WebSocket API for live order book (`bookTicker`) updates, this scanner calculates forward and reverse arbitrage paths instantly, factoring in real-world trading fees and order book bid/ask spreads.
 
-## Features
+### Features
 
 * **Real-Time Data Streaming:** Uses WebSockets to listen to live best bid/ask prices (`bookTicker`) rather than relying on slow REST API polling.
 * **$O(1)$ Lookup Optimization:** Pre-calculates all valid triangle paths during initialization and maps them directly to specific trading pairs for instant execution when a price updates.
