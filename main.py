@@ -3,6 +3,7 @@ import websocket
 import json
 import logging
 import time
+from pathlib import Path
 from src.utils import get_binance_fee
 
 
@@ -15,6 +16,7 @@ prices = {}
 triangles = []
 pair_to_triangles = {}
 
+Path("logs").mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
     filename='logs/arbitrage_logs.txt',
     filemode='w',
