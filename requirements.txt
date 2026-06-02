@@ -1,6 +1,2 @@
-numpy
-pandas
-matplotlib
-notebook
 requests
 websocket-client
