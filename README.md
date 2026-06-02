@@ -2,7 +2,13 @@
 
 A high-performance Python script that detects real-time triangular arbitrage opportunities on the Binance Spot market. By leveraging Binance's WebSocket API for live order book (`bookTicker`) updates, this scanner calculates forward and reverse arbitrage paths instantly, factoring in real-world trading fees and order book bid/ask spreads.
 
----
+## Features
+
+* **Real-Time Data Streaming:** Uses WebSockets to listen to live best bid/ask prices (`bookTicker`) rather than relying on slow REST API polling.
+* **$O(1)$ Lookup Optimization:** Pre-calculates all valid triangle paths during initialization and maps them directly to specific trading pairs for instant execution when a price updates.
+* **Targeted Subscriptions:** Bypasses WebSocket bloat by only subscribing to the specific pairs needed to form closed triangles with the chosen base coin, automatically chunking requests to respect Binance's API limits.
+* **Bi-Directional Checking:** Evaluates both **Forward** (e.g., USDC -> ETH -> BTC -> USDC) and **Reverse** (e.g., USDC -> BTC -> ETH -> USDC) paths simultaneously.
+* **Accurate Fee Calculation:** Integrates with a custom utility to factor in the specific Binance VIP level, Maker/Taker status, and BNB fee discounts to ensure logged profits are mathematically viable.
 
 ## 1. Introduction & Theoretical Foundation
 
@@ -15,16 +21,6 @@ Theoretically, a gross risk-free profit exists if the product of the cross-excha
 $$\frac{S}{C_1}\cdot \frac{C_1}{C_2} \cdot \frac{C_2}{S} > 1$$
 
 In live production environments, this expression must expand to account for order book spreads (crossing the bid-ask matrix) and operational fees deducted by the matching engine at each execution hop.
-
-## Features
-
-* **Real-Time Data Streaming:** Uses WebSockets to listen to live best bid/ask prices (`bookTicker`) rather than relying on slow REST API polling.
-* **$O(1)$ Lookup Optimization:** Pre-calculates all valid triangle paths during initialization and maps them directly to specific trading pairs for instant execution when a price updates.
-* **Targeted Subscriptions:** Bypasses WebSocket bloat by only subscribing to the specific pairs needed to form closed triangles with the chosen base coin, automatically chunking requests to respect Binance's API limits.
-* **Bi-Directional Checking:** Evaluates both **Forward** (e.g., USDC -> ETH -> BTC -> USDC) and **Reverse** (e.g., USDC -> BTC -> ETH -> USDC) paths simultaneously.
-* **Accurate Fee Calculation:** Integrates with a custom utility to factor in the specific Binance VIP level, Maker/Taker status, and BNB fee discounts to ensure logged profits are mathematically viable.
-
----
 
 ## 2. Mathematical Model & Execution Paths
 
@@ -76,8 +72,6 @@ The total net profit for the reverse sequence is:
 
 $$\text{Profit}_{\text{USD, Rev}} = I_{\text{final, Rev}} - I$$
 
----
-
 ## 3. High-Performance Architecture
 
 Triangular arbitrage requires ultra-low latency execution. To prevent overhead during runtime, the architecture splits operations into a heavy, computationally decoupled **Initialization Phase** and a lightweight, event-driven **Streaming Phase**.
@@ -104,14 +98,10 @@ Binance enforces strict protocol limits on active connection nodes. The scanner 
 * **Message Chunking:** Subscriptions are batched into arrays of $100$ streams and throttled with a $0.5$-second delay to protect the client IP from being rate-limited during connection handshakes.
 * **Stream Cap Safety:** The subscription list automatically caps at $1000$ tickers to safely remain within Binance's single-connection hard ceiling of $1024$ streams.
 
----
-
 ## 4. Prerequisites
 
 * **Python:** Version 3.7 or higher.
 * **Libraries:** `requests`, `websocket-client` (Note: ensure you install `websocket-client`, not `websocket`).
-
----
 
 ## 5. Configuration
 
@@ -123,8 +113,6 @@ You can adjust the bot's behavior by modifying the global variables at the top o
 | **`INVESTMENT`** | `1_000` | The simulated starting balance used to calculate total profit.   |
 | **`MIN_PROFIT_USD`** | `0.01` | The minimum strict dollar profit required to log an opportunity. |
 | **`FEE`** | `get_binance_fee(...)` | The specific trading fee rate, fetched via the utility function. |
-
----
 
 ## 6. Project Structure & Setup
 
@@ -149,8 +137,6 @@ python main.py
 3. **Connection (`on_open`):** It chunks relevant pairs into batches of 100 and subscribes to their live order book updates.
 4. **Evaluation (`check_arbitrage`):** Every time a pair's best bid or ask price changes, the script looks up every triangle containing that pair and simulates a trade. It accounts for the bid/ask spread and subtracts the specific `FEE` at each of the three steps.
 5. **Logging:** Profitable hits are printed in green to your console and appended to `logs/arbitrage_logs.txt`.
-
----
 
 ## 7. Disclaimer & Limitations
 
